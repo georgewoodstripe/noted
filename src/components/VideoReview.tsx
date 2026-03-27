@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface ReviewComment {
   id: string
@@ -59,6 +59,43 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
   const [newComment, setNewComment] = useState({ author: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
 
+  // Attach video events via native DOM listeners — more reliable with dynamic imports
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+    const onMeta = () => {
+      const d = video.duration
+      if (d && isFinite(d)) { setDuration(d); durationRef.current = d }
+    }
+    const onTime = () => setCurrentTime(video.currentTime)
+    const onPlay = () => setIsPlaying(true)
+    const onPause = () => setIsPlaying(false)
+    video.addEventListener('loadedmetadata', onMeta)
+    video.addEventListener('durationchange', onMeta)
+    video.addEventListener('timeupdate', onTime)
+    video.addEventListener('play', onPlay)
+    video.addEventListener('pause', onPause)
+    // Pick up duration if metadata already loaded
+    if (video.duration && isFinite(video.duration)) onMeta()
+    return () => {
+      video.removeEventListener('loadedmetadata', onMeta)
+      video.removeEventListener('durationchange', onMeta)
+      video.removeEventListener('timeupdate', onTime)
+      video.removeEventListener('play', onPlay)
+      video.removeEventListener('pause', onPause)
+    }
+  }, [])
+
+  // Always-current scrub function stored in a ref so window listeners never go stale
+  const scrubRef = useRef<(clientX: number) => void>(() => {})
+  scrubRef.current = (clientX: number) => {
+    const rect = progressRef.current?.getBoundingClientRect()
+    const d = durationRef.current
+    if (!rect || !d) return
+    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
+    if (videoRef.current) videoRef.current.currentTime = ratio * d
+  }
+
   function togglePlay() {
     const video = videoRef.current
     if (!video) return
@@ -70,21 +107,14 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
     if (videoRef.current) videoRef.current.currentTime = seconds
   }
 
-  function scrubFromEvent(clientX: number) {
-    const rect = progressRef.current?.getBoundingClientRect()
-    const d = durationRef.current
-    if (!rect || !d) return
-    const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    seekTo(ratio * d)
-  }
-
   function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    e.preventDefault()
     wasPlayingRef.current = !videoRef.current?.paused
     videoRef.current?.pause()
     setIsDragging(true)
-    scrubFromEvent(e.clientX)
+    scrubRef.current(e.clientX)
 
-    function onMouseMove(e: MouseEvent) { scrubFromEvent(e.clientX) }
+    function onMouseMove(e: MouseEvent) { scrubRef.current(e.clientX) }
     function onMouseUp() {
       setIsDragging(false)
       if (wasPlayingRef.current) videoRef.current?.play()
@@ -125,10 +155,6 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
               ref={videoRef}
               src={`/api/slack/proxy/${review.slackFileId}`}
               className="w-full aspect-video object-contain cursor-pointer"
-              onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
-              onDurationChange={() => { const d = videoRef.current?.duration ?? 0; setDuration(d); durationRef.current = d }}
-              onPlay={() => setIsPlaying(true)}
-              onPause={() => setIsPlaying(false)}
               onClick={togglePlay}
             />
           </div>
@@ -138,29 +164,62 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
             <div
               ref={progressRef}
               onMouseDown={handleMouseDown}
-              suppressHydrationWarning
-              className={`relative h-2 rounded-full select-none mb-4 ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
-              style={{ backgroundColor: '#D4DEE9' }}
+              className="relative mb-4 select-none cursor-pointer"
+              style={{ height: 20 }}
             >
+              {/* Track */}
               <div
-                className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
-                style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%', backgroundColor: '#95A4BA' }}
+                className="absolute left-0 right-0 rounded-full"
+                style={{ top: 6, height: 8, backgroundColor: '#D4DEE9' }}
               />
+              {/* Fill */}
+              <div
+                className="absolute left-0 rounded-full pointer-events-none"
+                style={{
+                  top: 6,
+                  height: 8,
+                  width: duration ? `${(currentTime / duration) * 100}%` : '0%',
+                  backgroundColor: '#95A4BA',
+                }}
+              />
+              {/* Comment dots */}
               {comments.map((comment) => (
                 <button
                   key={comment.id}
                   onClick={(e) => { e.stopPropagation(); seekTo(comment.timestamp) }}
                   style={{
+                    position: 'absolute',
                     left: duration ? `${(comment.timestamp / duration) * 100}%` : '0%',
-                    width: 14,
-                    height: 14,
-                    backgroundColor: '#533AFD',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    width: 10,
+                    height: 10,
+                    backgroundColor: '#CC4B00',
                     border: '2px solid white',
+                    borderRadius: '50%',
+                    opacity: 0.7,
+                    zIndex: 10,
                   }}
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full hover:scale-125 transition-transform z-10"
                   title={`${formatTime(comment.timestamp)} — ${comment.author}: ${comment.text}`}
                 />
               ))}
+              {/* Thumb */}
+              <div
+                style={{
+                  position: 'absolute',
+                  left: duration ? `${(currentTime / duration) * 100}%` : '0%',
+                  top: '50%',
+                  transform: `translate(-50%, -50%) scale(${isDragging ? 1.25 : 1})`,
+                  width: 14,
+                  height: 14,
+                  backgroundColor: '#533AFD',
+                  border: '2px solid white',
+                  borderRadius: '50%',
+                  pointerEvents: 'none',
+                  transition: 'transform 0.1s',
+                  zIndex: 20,
+                }}
+              />
             </div>
 
             {/* Controls row */}
