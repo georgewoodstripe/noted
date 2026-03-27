@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import NotedLogo from '@/components/NotedLogo'
 
 export default function Home() {
   const [url, setUrl] = useState('')
@@ -9,7 +10,7 @@ export default function Home() {
   const [error, setError] = useState('')
   const router = useRouter()
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -33,7 +34,9 @@ export default function Home() {
     <main className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-5xl font-bold text-[#5B4EE8] mb-3">noted</h1>
+          <div className="flex justify-center mb-3">
+            <NotedLogo width={159} />
+          </div>
           <p className="font-mono text-[#2D3561] text-sm leading-relaxed">
             Timestamped video feedback<br />for design teams.
           </p>

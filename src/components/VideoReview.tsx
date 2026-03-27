@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
+import NotedLogo from './NotedLogo'
 
 interface ReviewComment {
   id: string
@@ -55,9 +57,23 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
   const [isDragging, setIsDragging] = useState(false)
   const wasPlayingRef = useRef(false)
   const [comments, setComments] = useState<ReviewComment[]>(review.comments)
+  const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
   const [addingAt, setAddingAt] = useState<number | null>(null)
   const [newComment, setNewComment] = useState({ author: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
+
+  function toggleResolved(id: string) {
+    setResolvedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+
+  function deleteComment(id: string) {
+    setComments(prev => prev.filter(c => c.id !== id))
+    fetch(`/api/reviews/${review.id}/comments/${id}`, { method: 'DELETE' }).catch(() => {})
+  }
 
   // Attach video events via native DOM listeners — more reliable with dynamic imports
   useEffect(() => {
@@ -125,7 +141,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
     window.addEventListener('mouseup', onMouseUp)
   }
 
-  async function submitComment(e: React.FormEvent<HTMLFormElement>) {
+  async function submitComment(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
     if (addingAt === null) return
     setSubmitting(true)
@@ -145,6 +161,9 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
 
   return (
     <div className="min-h-screen">
+      <div className="fixed top-5 left-6" style={{ zIndex: 50 }}>
+        <Link href="/"><NotedLogo width={64} /></Link>
+      </div>
       <div className="mx-auto px-6 py-10" style={{ maxWidth: '80vw' }}>
         <h1 className="text-2xl font-bold text-[#2D3561] mb-6 text-center">{review.title}</h1>
 
@@ -299,24 +318,60 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           </div>
         ) : (
           <div className="space-y-3">
-            {comments.map((comment) => (
-              <div key={comment.id} className="bg-white border border-gray-200 rounded-xl px-5 py-4">
-                <div className="flex items-center gap-2.5 mb-2">
-                  <button
-                    onClick={() => seekTo(comment.timestamp)}
-                    className="flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors px-2 flex-shrink-0"
-                    style={{ border: '1px solid #D4DEE9', borderRadius: 6, height: 24, color: '#1A2C44' }}
-                  >
-                    <svg width="9" height="9" viewBox="0 0 11 11" fill="currentColor">
-                      <polygon points="1,0.5 10.5,5.5 1,10.5" />
-                    </svg>
-                    <span className="text-xs font-semibold" style={{ fontFamily: 'inherit' }}>{formatTime(comment.timestamp)}</span>
-                  </button>
-                  <span className="text-[#2D3561] text-sm font-semibold">{comment.author}</span>
+            {[...comments].sort((a, b) => Number(resolvedIds.has(a.id)) - Number(resolvedIds.has(b.id))).map((comment) => {
+              const resolved = resolvedIds.has(comment.id)
+              return (
+                <div key={comment.id} className="bg-white border border-gray-200 rounded-xl transition-opacity" style={{ padding: 16, opacity: resolved ? 0.4 : 1 }}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        onClick={() => seekTo(comment.timestamp)}
+                        className="flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors px-2 flex-shrink-0"
+                        style={{ border: '1px solid #D4DEE9', borderRadius: 6, height: 24, color: '#1A2C44' }}
+                      >
+                        <svg width="9" height="9" viewBox="0 0 11 11" fill="currentColor">
+                          <polygon points="1,0.5 10.5,5.5 1,10.5" />
+                        </svg>
+                        <span className="text-xs font-semibold" style={{ fontFamily: 'inherit' }}>{formatTime(comment.timestamp)}</span>
+                      </button>
+                      <span className="text-[#2D3561] text-sm font-semibold">{comment.author}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => toggleResolved(comment.id)}
+                        className="flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors px-2 flex-shrink-0"
+                        style={{ border: '1px solid #D4DEE9', borderRadius: 6, height: 24, color: '#1A2C44' }}
+                      >
+                        <span className="text-xs font-semibold" style={{ fontFamily: 'inherit' }}>Mark as resolved</span>
+                        {resolved ? (
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="7" stroke="#5B4EE8" strokeWidth="1.5"/>
+                            <polyline points="5,8 7,10.5 11,5.5" stroke="#5B4EE8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        ) : (
+                          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="7" stroke="#D4DEE9" strokeWidth="1.5"/>
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => deleteComment(comment.id)}
+                        className="flex items-center justify-center bg-white hover:bg-red-50 transition-colors text-red-400 hover:text-red-500"
+                        style={{ border: '1px solid #D4DEE9', borderRadius: 6, width: 24, height: 24 }}
+                        title="Delete comment"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                          <polyline points="1,3 13,3"/>
+                          <path d="M4,3V2a1,1 0 011-1h4a1,1 0 011,1v1"/>
+                          <path d="M2,3l0.9,9.1A1,1 0 004,13h6a1,1 0 001.1-.9L12,3"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p className="leading-relaxed" style={{ fontSize: 14, color: '#2D3561' }}>{comment.text}</p>
                 </div>
-                <p className="text-gray-500 text-sm leading-relaxed">{comment.text}</p>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
         </div>
