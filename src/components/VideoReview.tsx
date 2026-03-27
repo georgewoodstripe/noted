@@ -275,26 +275,38 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
               <span className="text-sm text-[#8B95B0]">
                 Commenting at <span className="text-[#5B4EE8] font-medium">{formatTime(addingAt)}</span>
               </span>
-              <button type="button" onClick={() => setAddingAt(null)} className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
-                cancel
+              <button
+                type="button"
+                onClick={() => setAddingAt(null)}
+                className="flex items-center justify-center bg-white hover:bg-red-50 transition-colors text-red-400 hover:text-red-500"
+                style={{ border: '1px solid #D4DEE9', borderRadius: 6, width: 24, height: 24 }}
+                title="Cancel"
+              >
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                  <polyline points="1,3 13,3"/>
+                  <path d="M4,3V2a1,1 0 011-1h4a1,1 0 011,1v1"/>
+                  <path d="M2,3l0.9,9.1A1,1 0 004,13h6a1,1 0 001.1-.9L12,3"/>
+                </svg>
               </button>
             </div>
-            <input
-              type="text"
-              placeholder="Your name"
-              value={newComment.author}
-              onChange={(e) => setNewComment((prev) => ({ ...prev, author: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5B4EE8]/30 focus:border-[#5B4EE8] transition-colors"
-              required
-            />
-            <textarea
-              placeholder="Your feedback..."
-              value={newComment.text}
-              onChange={(e) => setNewComment((prev) => ({ ...prev, text: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5B4EE8]/30 focus:border-[#5B4EE8] transition-colors resize-none"
-              rows={3}
-              required
-            />
+            <div className="flex flex-col" style={{ gap: 8 }}>
+              <textarea
+                placeholder="Your feedback..."
+                value={newComment.text}
+                onChange={(e) => setNewComment((prev) => ({ ...prev, text: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5B4EE8]/30 focus:border-[#5B4EE8] transition-colors resize-none"
+                rows={3}
+                required
+              />
+              <input
+                type="text"
+                placeholder="Your name"
+                value={newComment.author}
+                onChange={(e) => setNewComment((prev) => ({ ...prev, author: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5B4EE8]/30 focus:border-[#5B4EE8] transition-colors"
+                required
+              />
+            </div>
             <button
               type="submit"
               disabled={submitting}
@@ -334,7 +346,6 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                         </svg>
                         <span className="text-xs font-semibold" style={{ fontFamily: 'inherit' }}>{formatTime(comment.timestamp)}</span>
                       </button>
-                      <span className="text-[#2D3561] text-sm font-semibold">{comment.author}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -369,6 +380,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                     </div>
                   </div>
                   <p className="leading-relaxed" style={{ fontSize: 14, color: '#2D3561' }}>{comment.text}</p>
+                  <p className="mt-3" style={{ fontSize: 11, fontFamily: 'monospace', color: '#8B95B0' }}>{comment.author}</p>
                 </div>
               )
             })}

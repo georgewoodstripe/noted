@@ -6,6 +6,6 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; commentId: string }> }
 ) {
   const { commentId } = await params
-  await prisma.reviewComment.delete({ where: { id: commentId } })
+  await prisma.comment.delete({ where: { id: commentId } })
   return new NextResponse(null, { status: 204 })
 }
