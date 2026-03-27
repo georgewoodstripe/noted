@@ -145,7 +145,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="mx-auto px-6 py-10" style={{ maxWidth: '80vw' }}>
         <h1 className="text-2xl font-bold text-[#2D3561] mb-6 text-center">{review.title}</h1>
 
         {/* Video card */}
@@ -251,7 +251,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
 
         {/* Comment form */}
         {addingAt !== null && (
-          <form onSubmit={submitComment} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 mb-8">
+          <form onSubmit={submitComment} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 mb-8 mx-auto" style={{ maxWidth: 600 }}>
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#8B95B0]">
                 Commenting at <span className="text-[#5B4EE8] font-medium">{formatTime(addingAt)}</span>
@@ -286,6 +286,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           </form>
         )}
 
+        <div className="mx-auto" style={{ maxWidth: 600 }}>
         {/* Comment count */}
         <p className="text-sm font-bold text-[#8B95B0] text-center mb-5">
           {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
@@ -318,6 +319,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   )
