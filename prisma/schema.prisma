@@ -1,0 +1,29 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Review {
+  id           String    @id @default(cuid())
+  title        String
+  slackFileId  String
+  slackUrl     String
+  uploaderName String    @default("Unknown")
+  mimetype     String    @default("video/mp4")
+  createdAt    DateTime  @default(now())
+  comments     Comment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  author    String
+  text      String
+  timestamp Float
+  createdAt DateTime @default(now())
+}
