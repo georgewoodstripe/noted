@@ -50,6 +50,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
   const progressRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const durationRef = useRef(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const wasPlayingRef = useRef(false)
@@ -71,9 +72,10 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
 
   function scrubFromEvent(clientX: number) {
     const rect = progressRef.current?.getBoundingClientRect()
-    if (!rect || !duration) return
+    const d = durationRef.current
+    if (!rect || !d) return
     const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width))
-    seekTo(ratio * duration)
+    seekTo(ratio * d)
   }
 
   function handleMouseDown(e: React.MouseEvent<HTMLDivElement>) {
@@ -117,37 +119,45 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
         <h1 className="text-2xl font-bold text-[#2D3561] mb-6 text-center">{review.title}</h1>
 
         {/* Video card */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden mb-8">
-          <div className="bg-black">
+        <div className="bg-white border border-gray-200 rounded-2xl mb-8" style={{ padding: 8 }}>
+          <div className="bg-black overflow-hidden" style={{ borderRadius: 6 }}>
             <video
               ref={videoRef}
               src={`/api/slack/proxy/${review.slackFileId}`}
               className="w-full aspect-video object-contain cursor-pointer"
               onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
-              onDurationChange={() => setDuration(videoRef.current?.duration ?? 0)}
+              onDurationChange={() => { const d = videoRef.current?.duration ?? 0; setDuration(d); durationRef.current = d }}
               onPlay={() => setIsPlaying(true)}
               onPause={() => setIsPlaying(false)}
               onClick={togglePlay}
             />
           </div>
 
-          <div className="px-5 pt-4 pb-5">
+          <div className="px-3 pt-4 pb-3">
             {/* Progress bar */}
             <div
               ref={progressRef}
               onMouseDown={handleMouseDown}
-              className={`relative h-2 bg-gray-200 rounded-full select-none mb-4${isDragging ? ' cursor-grabbing' : ' cursor-pointer'}`}
+              suppressHydrationWarning
+              className={`relative h-2 rounded-full select-none mb-4 ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
+              style={{ backgroundColor: '#D4DEE9' }}
             >
               <div
-                className="absolute left-0 top-0 h-full bg-[#5B4EE8] rounded-full pointer-events-none"
-                style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%' }}
+                className="absolute left-0 top-0 h-full rounded-full pointer-events-none"
+                style={{ width: duration ? `${(currentTime / duration) * 100}%` : '0%', backgroundColor: '#95A4BA' }}
               />
               {comments.map((comment) => (
                 <button
                   key={comment.id}
                   onClick={(e) => { e.stopPropagation(); seekTo(comment.timestamp) }}
-                  style={{ left: duration ? `${(comment.timestamp / duration) * 100}%` : '0%' }}
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-amber-400 border-2 border-white rounded-full hover:scale-125 transition-transform z-10"
+                  style={{
+                    left: duration ? `${(comment.timestamp / duration) * 100}%` : '0%',
+                    width: 14,
+                    height: 14,
+                    backgroundColor: '#533AFD',
+                    border: '2px solid white',
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 rounded-full hover:scale-125 transition-transform z-10"
                   title={`${formatTime(comment.timestamp)} — ${comment.author}: ${comment.text}`}
                 />
               ))}
@@ -163,7 +173,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                 >
                   {isPlaying ? <PauseIcon /> : <PlayIcon />}
                 </button>
-                <span className="text-[#8B95B0] text-sm font-mono tabular-nums">
+                <span className="text-[#8B95B0] text-sm tabular-nums">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
               </div>
@@ -171,7 +181,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
               {addingAt === null && (
                 <button
                   onClick={() => { videoRef.current?.pause(); setAddingAt(currentTime) }}
-                  className="bg-[#5B4EE8] hover:bg-[#4D42D4] text-white rounded-lg px-4 py-1.5 text-sm font-medium transition-colors"
+                  className="bg-[#5B4EE8] hover:bg-[#4D42D4] text-white rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors"
                 >
                   Leave feedback at {formatTime(currentTime)}
                 </button>
@@ -185,7 +195,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           <form onSubmit={submitComment} className="bg-white border border-gray-200 rounded-xl p-5 space-y-3 mb-8">
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#8B95B0]">
-                Commenting at <span className="text-[#5B4EE8] font-mono font-medium">{formatTime(addingAt)}</span>
+                Commenting at <span className="text-[#5B4EE8] font-medium">{formatTime(addingAt)}</span>
               </span>
               <button type="button" onClick={() => setAddingAt(null)} className="text-gray-400 hover:text-gray-600 text-sm transition-colors">
                 cancel
@@ -234,12 +244,13 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                 <div className="flex items-center gap-2.5 mb-2">
                   <button
                     onClick={() => seekTo(comment.timestamp)}
-                    className="flex items-center gap-1.5 bg-[#5B4EE8]/10 hover:bg-[#5B4EE8]/20 text-[#5B4EE8] rounded-md px-2 py-0.5 transition-colors"
+                    className="flex items-center gap-1.5 bg-white hover:bg-gray-50 transition-colors px-2 flex-shrink-0"
+                    style={{ border: '1px solid #D4DEE9', borderRadius: 6, height: 24, color: '#1A2C44' }}
                   >
                     <svg width="9" height="9" viewBox="0 0 11 11" fill="currentColor">
                       <polygon points="1,0.5 10.5,5.5 1,10.5" />
                     </svg>
-                    <span className="text-xs font-mono font-medium">{formatTime(comment.timestamp)}</span>
+                    <span className="text-xs font-semibold" style={{ fontFamily: 'inherit' }}>{formatTime(comment.timestamp)}</span>
                   </button>
                   <span className="text-[#2D3561] text-sm font-semibold">{comment.author}</span>
                 </div>
