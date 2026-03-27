@@ -30,45 +30,49 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg">
-        <div className="mb-10 text-center">
-          <h1 className="text-4xl font-semibold text-white tracking-tight mb-2">noted</h1>
-          <p className="text-zinc-400">Timestamped video feedback for design teams</p>
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <div className="w-full max-w-md">
+        <div className="mb-8 text-center">
+          <h1 className="text-5xl font-bold text-[#5B4EE8] mb-3">noted</h1>
+          <p className="font-mono text-[#2D3561] text-sm leading-relaxed">
+            Timestamped video feedback<br />for design teams.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-zinc-400 mb-2">
-              Paste a Slack video message URL
-            </label>
-            <input
-              type="url"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://yourworkspace.slack.com/archives/C.../p..."
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:border-transparent text-sm"
-              required
-            />
-          </div>
-
-          {error && (
-            <div className="bg-red-950 border border-red-800 rounded-lg px-4 py-3 text-red-300 text-sm">
-              {error}
+        <div className="bg-white rounded-xl p-5">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label className="block text-sm font-semibold text-[#2D3561] mb-2">
+                Paste your video URL from Slack
+              </label>
+              <input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://yourworkplace.slack.com/..."
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#5B4EE8]/30 focus:border-[#5B4EE8] transition-colors"
+                required
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading || !url}
-            className="w-full bg-white text-zinc-950 rounded-lg px-4 py-3 font-medium text-sm hover:bg-zinc-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? 'Creating review page...' : 'Create review page →'}
-          </button>
-        </form>
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
 
-        <p className="mt-8 text-center text-xs text-zinc-600">
-          Video streams directly from Slack. Make sure your bot is invited to the channel.
+            <button
+              type="submit"
+              disabled={loading || !url}
+              className="w-full bg-[#5B4EE8] hover:bg-[#4D42D4] text-white rounded-lg px-4 py-2.5 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? 'Creating review...' : 'Create review'}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-5 text-center text-xs text-[#8B95B0] leading-relaxed">
+          Video streams directly from Slack.<br />Make sure your bot is invited to the channel.
         </p>
       </div>
     </main>

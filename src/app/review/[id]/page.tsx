@@ -11,5 +11,11 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
 
   if (!review) notFound()
 
-  return <VideoReview review={review} />
+  const serialized = {
+    ...review,
+    createdAt: review.createdAt.toISOString(),
+    comments: review.comments.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+  }
+
+  return <VideoReview review={serialized} />
 }
