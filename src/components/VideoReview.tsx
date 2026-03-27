@@ -63,6 +63,13 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
   const [addingAt, setAddingAt] = useState<number | null>(null)
   const [newComment, setNewComment] = useState({ author: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   function toggleResolved(id: string) {
     setResolvedIds(prev => {
@@ -167,7 +174,24 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
         <Link href="/"><NotedLogo width={64} /></Link>
       </div>
       <div className="mx-auto px-6 py-10" style={{ maxWidth: '80vw' }}>
-        <h1 className="text-2xl font-bold text-[#2D3561] mb-6 text-center">{review.title}</h1>
+        <button
+          onClick={copyLink}
+          className="flex items-center justify-center gap-2 mx-auto mb-6 group"
+        >
+          <h1 className="text-2xl font-bold text-[#2D3561] group-hover:text-[#5B4EE8] transition-colors">{review.title}</h1>
+          <span className="text-[#8B95B0] group-hover:text-[#5B4EE8] transition-colors flex-shrink-0" style={{ marginTop: 2 }}>
+            {copied ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <polyline points="3,8 6,11 13,4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.5 9.5a3.5 3.5 0 0 0 5 0l2-2a3.5 3.5 0 0 0-5-5l-1 1"/>
+                <path d="M9.5 6.5a3.5 3.5 0 0 0-5 0l-2 2a3.5 3.5 0 0 0 5 5l1-1"/>
+              </svg>
+            )}
+          </span>
+        </button>
 
         {/* Video card */}
         <div className="bg-white border border-gray-200 rounded-2xl mb-8" style={{ padding: 8 }}>
