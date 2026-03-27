@@ -20,6 +20,7 @@ interface ReviewWithComments {
   slackUrl: string
   uploaderName: string
   mimetype: string
+  source: string
   createdAt: string | Date
   comments: ReviewComment[]
 }
@@ -58,6 +59,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
   const wasPlayingRef = useRef(false)
   const [comments, setComments] = useState<ReviewComment[]>(review.comments)
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set())
+  const [showResolved, setShowResolved] = useState(true)
   const [addingAt, setAddingAt] = useState<number | null>(null)
   const [newComment, setNewComment] = useState({ author: '', text: '' })
   const [submitting, setSubmitting] = useState(false)
@@ -172,7 +174,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           <div className="bg-black overflow-hidden" style={{ borderRadius: 6 }}>
             <video
               ref={videoRef}
-              src={`/api/slack/proxy/${review.slackFileId}`}
+              src={review.source === 'gdrive' ? `/api/gdrive/proxy/${review.slackFileId}` : `/api/slack/proxy/${review.slackFileId}`}
               className="w-full aspect-video object-contain cursor-pointer"
               onClick={togglePlay}
             />
@@ -318,10 +320,42 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
         )}
 
         <div className="mx-auto" style={{ maxWidth: 600 }}>
-        {/* Comment count */}
-        <p className="text-sm font-bold text-[#8B95B0] text-center mb-5">
-          {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
-        </p>
+        {/* Comment count + toggle */}
+        <div className="flex items-center justify-between mb-5" style={{ paddingLeft: 16, paddingRight: 16 }}>
+          <p className="text-sm font-bold text-[#8B95B0]">
+            {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+          </p>
+          <button
+            onClick={() => setShowResolved(prev => !prev)}
+            className="flex items-center gap-2"
+          >
+            <div
+              className="relative transition-colors"
+              style={{
+                width: 36,
+                height: 20,
+                borderRadius: 10,
+                backgroundColor: showResolved ? '#5B4EE8' : '#D4DEE9',
+                transition: 'background-color 0.2s',
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 2,
+                  left: showResolved ? 18 : 2,
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50%',
+                  backgroundColor: 'white',
+                  transition: 'left 0.2s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                }}
+              />
+            </div>
+            <span className="text-sm font-semibold text-[#2D3561]">Show resolved</span>
+          </button>
+        </div>
 
         {/* Comments list */}
         {comments.length === 0 ? (
@@ -330,7 +364,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           </div>
         ) : (
           <div className="space-y-3">
-            {[...comments].sort((a, b) => Number(resolvedIds.has(a.id)) - Number(resolvedIds.has(b.id))).map((comment) => {
+            {[...comments].filter(c => showResolved || !resolvedIds.has(c.id)).sort((a, b) => Number(resolvedIds.has(a.id)) - Number(resolvedIds.has(b.id))).map((comment) => {
               const resolved = resolvedIds.has(comment.id)
               return (
                 <div key={comment.id} className="bg-white border border-gray-200 rounded-xl transition-opacity" style={{ padding: 16, opacity: resolved ? 0.4 : 1 }}>
@@ -380,7 +414,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                     </div>
                   </div>
                   <p className="leading-relaxed" style={{ fontSize: 14, color: '#2D3561' }}>{comment.text}</p>
-                  <p className="mt-3" style={{ fontSize: 11, fontFamily: 'monospace', color: '#8B95B0' }}>{comment.author}</p>
+                  <p className="mt-3" style={{ fontSize: 12, fontFamily: 'monospace', color: '#8B95B0' }}>{comment.author}</p>
                 </div>
               )
             })}

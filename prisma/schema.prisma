@@ -14,6 +14,7 @@ model Review {
   slackUrl     String
   uploaderName String    @default("Unknown")
   mimetype     String    @default("video/mp4")
+  source       String    @default("slack")
   createdAt    DateTime  @default(now())
   comments     Comment[]
 }
