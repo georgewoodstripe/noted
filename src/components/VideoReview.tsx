@@ -48,7 +48,7 @@ function PauseIcon() {
   )
 }
 
-export default function VideoReview({ review }: { review: ReviewWithComments }) {
+export default function VideoReview({ review, hideComments }: { review: ReviewWithComments; hideComments?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState(0)
@@ -282,7 +282,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
                 </span>
               </div>
 
-              {addingAt === null && (
+              {!hideComments && addingAt === null && (
                 <button
                   onClick={() => { videoRef.current?.pause(); setAddingAt(currentTime) }}
                   className="bg-[#5B4EE8] hover:bg-[#4D42D4] text-white rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors"
@@ -343,7 +343,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
           </form>
         )}
 
-        <div className="mx-auto" style={{ maxWidth: 600 }}>
+        {!hideComments && <div className="mx-auto" style={{ maxWidth: 600 }}>
         {/* Comment count + toggle */}
         <div className="flex items-center justify-between mb-5" style={{ paddingLeft: 16, paddingRight: 16 }}>
           <p className="text-sm font-bold text-[#8B95B0]">
@@ -444,7 +444,7 @@ export default function VideoReview({ review }: { review: ReviewWithComments }) 
             })}
           </div>
         )}
-        </div>
+        </div>}
       </div>
     </div>
   )
