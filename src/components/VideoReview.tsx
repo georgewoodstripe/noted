@@ -48,7 +48,7 @@ function PauseIcon() {
   )
 }
 
-export default function VideoReview({ review, hideComments }: { review: ReviewWithComments; hideComments?: boolean }) {
+export default function VideoReview({ review, hideComments, localMode }: { review: ReviewWithComments; hideComments?: boolean; localMode?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
   const [currentTime, setCurrentTime] = useState(0)
@@ -79,9 +79,27 @@ export default function VideoReview({ review, hideComments }: { review: ReviewWi
     })
   }
 
+  const localKey = `share-comments-${review.id}`
+
+  useEffect(() => {
+    if (!localMode) return
+    try {
+      const stored = localStorage.getItem(localKey)
+      if (stored) setComments(JSON.parse(stored))
+    } catch {}
+  }, [localMode, localKey])
+
+  function saveLocal(updated: ReviewComment[]) {
+    try { localStorage.setItem(localKey, JSON.stringify(updated)) } catch {}
+  }
+
   function deleteComment(id: string) {
-    setComments(prev => prev.filter(c => c.id !== id))
-    fetch(`/api/reviews/${review.id}/comments/${id}`, { method: 'DELETE' }).catch(() => {})
+    setComments(prev => {
+      const updated = prev.filter(c => c.id !== id)
+      if (localMode) saveLocal(updated)
+      return updated
+    })
+    if (!localMode) fetch(`/api/reviews/${review.id}/comments/${id}`, { method: 'DELETE' }).catch(() => {})
   }
 
   // Attach video events via native DOM listeners — more reliable with dynamic imports
@@ -155,14 +173,31 @@ export default function VideoReview({ review, hideComments }: { review: ReviewWi
     if (addingAt === null) return
     setSubmitting(true)
 
-    const res = await fetch(`/api/reviews/${review.id}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...newComment, timestamp: addingAt }),
-    })
-    const comment = await res.json()
+    let comment: ReviewComment
 
-    setComments((prev) => [...prev, comment].sort((a, b) => a.timestamp - b.timestamp))
+    if (localMode) {
+      comment = {
+        id: `local-${Date.now()}`,
+        reviewId: review.id,
+        author: newComment.author,
+        text: newComment.text,
+        timestamp: addingAt,
+        createdAt: new Date().toISOString(),
+      }
+    } else {
+      const res = await fetch(`/api/reviews/${review.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newComment, timestamp: addingAt }),
+      })
+      comment = await res.json()
+    }
+
+    setComments((prev) => {
+      const updated = [...prev, comment].sort((a, b) => a.timestamp - b.timestamp)
+      if (localMode) saveLocal(updated)
+      return updated
+    })
     setAddingAt(null)
     setNewComment({ author: '', text: '' })
     setSubmitting(false)

@@ -11,7 +11,7 @@ export default async function SharePage({
   const { title } = await searchParams
 
   const review = {
-    id: '',
+    id: fileId,
     title: title || 'Video Review',
     slackFileId: fileId,
     slackUrl: '',
@@ -22,5 +22,5 @@ export default async function SharePage({
     comments: [],
   }
 
-  return <VideoReview review={review} hideComments />
+  return <VideoReview review={review} localMode />
 }
